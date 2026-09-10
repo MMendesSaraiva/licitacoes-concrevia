@@ -174,7 +174,24 @@ def montar_link_edital(item: dict) -> str:
     return item.get("linkSistemaOrigem", "") or ""
 
 
+def formatar_data_iso_br(data_iso: str) -> str:
+    """Converte datas ISO da API (ex: 2026-09-22 ou 2026-09-22T00:00:00) para DD/MM/AAAA."""
+    if not data_iso:
+        return "não informado"
+    try:
+        return datetime.fromisoformat(data_iso.split("T")[0]).strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        return data_iso
+    """Converte AAAAMMDD (formato da API) para DD/MM/AAAA (formato brasileiro)."""
+    try:
+        return datetime.strptime(data_yyyymmdd, "%Y%m%d").strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        return data_yyyymmdd
+
+
 def montar_html(resultados_por_municipio: dict, data_inicial: str, data_final: str) -> str:
+    data_inicial_br = formatar_data_br(data_inicial)
+    data_final_br = formatar_data_br(data_final)
     hoje_fmt = datetime.now().strftime("%d/%m/%Y")
     total = sum(len(v) for v in resultados_por_municipio.values())
 
@@ -191,7 +208,7 @@ def montar_html(resultados_por_municipio: dict, data_inicial: str, data_final: s
                 orgao = item.get("orgaoEntidade", {}).get("razaoSocial", "órgão não informado")
                 valor = item.get("valorTotalEstimado")
                 valor_fmt = f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor else "não informado"
-                encerramento = item.get("dataEncerramentoProposta", "não informado")
+                encerramento = formatar_data_iso_br(item.get("dataEncerramentoProposta"))
                 link = montar_link_edital(item)
                 tags = " ".join(f'<span style="background:#eef4ff;color:#2952a3;padding:2px 8px;border-radius:10px;font-size:12px;margin-right:4px;">{p}</span>' for p in palavras)
 
@@ -219,7 +236,7 @@ def montar_html(resultados_por_municipio: dict, data_inicial: str, data_final: s
       <div style="max-width:640px;margin:0 auto;padding:24px;">
         <div style="background:#1a1a1a;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0;">
           <h2 style="margin:0;">Resumo de Licitações — Grupo Concrevia</h2>
-          <div style="opacity:0.8;font-size:13px;">Publicações de {data_inicial} a {data_final} · Enviado em {hoje_fmt}</div>
+          <div style="opacity:0.8;font-size:13px;">Publicações de {data_inicial_br} a {data_final_br} · Enviado em {hoje_fmt}</div>
         </div>
         <div style="background:#fff;padding:24px;border-radius:0 0 10px 10px;border:1px solid #eee;border-top:none;">
           <p style="color:#333;">Bom dia! Segue o resumo automático de licitações encontradas no PNCP para os municípios monitorados.</p>
