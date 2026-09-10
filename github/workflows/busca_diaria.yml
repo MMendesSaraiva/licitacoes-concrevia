@@ -1,0 +1,30 @@
+name: Busca diária de licitações
+ 
+on:
+  schedule:
+    # 09:00 no horário de Brasília (12:00 UTC) — pode ajustar o horário
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+    # permite clicar em "Run workflow" manualmente na aba Actions do GitHub
+ 
+jobs:
+  buscar-e-enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+ 
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+ 
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+ 
+      - name: Rodar o script de busca
+        env:
+          EMAIL_REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
+          EMAIL_SENHA_APP: ${{ secrets.EMAIL_SENHA_APP }}
+          EMAIL_DESTINATARIOS: ${{ secrets.EMAIL_DESTINATARIOS }}
+        run: python buscar_licitacoes.py 
