@@ -182,6 +182,9 @@ def formatar_data_iso_br(data_iso: str) -> str:
         return datetime.fromisoformat(data_iso.split("T")[0]).strftime("%d/%m/%Y")
     except (ValueError, TypeError):
         return data_iso
+
+
+def formatar_data_br(data_yyyymmdd: str) -> str:
     """Converte AAAAMMDD (formato da API) para DD/MM/AAAA (formato brasileiro)."""
     try:
         return datetime.strptime(data_yyyymmdd, "%Y%m%d").strftime("%d/%m/%Y")
