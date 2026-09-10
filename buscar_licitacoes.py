@@ -25,8 +25,8 @@ from urllib3.util.retry import Retry
 # ou falha momentaneamente; tentamos até 4 vezes antes de desistir)
 SESSAO = requests.Session()
 _retry = Retry(
-    total=4,
-    backoff_factor=5,  # espera 5s, 10s, 20s, 40s entre tentativas
+    total=2,
+    backoff_factor=3,  # espera 3s, depois 6s entre tentativas
     status_forcelist=[429, 500, 502, 503, 504],
     allowed_methods=["GET"],
 )
@@ -147,7 +147,7 @@ def buscar_licitacoes_municipio(codigo_ibge: str, data_inicial: str, data_final:
                 "tamanhoPagina": 50,
             }
             try:
-                resp = SESSAO.get(BASE_URL, params=params, timeout=60)
+                resp = SESSAO.get(BASE_URL, params=params, timeout=30)
             except requests.exceptions.RequestException as e:
                 print(f"  aviso: falha ao consultar município {codigo_ibge}, modalidade {modalidade}, página {pagina}: {e}")
                 break
