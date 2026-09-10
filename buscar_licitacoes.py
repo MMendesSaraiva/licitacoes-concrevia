@@ -18,6 +18,19 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+# Sessão HTTP com nova tentativa automática (o servidor do PNCP às vezes demora
+# ou falha momentaneamente; tentamos até 4 vezes antes de desistir)
+SESSAO = requests.Session()
+_retry = Retry(
+    total=4,
+    backoff_factor=5,  # espera 5s, 10s, 20s, 40s entre tentativas
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET"],
+)
+SESSAO.mount("https://", HTTPAdapter(max_retries=_retry))
 
 # ---------------------------------------------------------------------------
 # CONFIGURAÇÃO — ajuste aqui sem precisar mexer no resto do código
@@ -133,7 +146,11 @@ def buscar_licitacoes_municipio(codigo_ibge: str, data_inicial: str, data_final:
                 "pagina": pagina,
                 "tamanhoPagina": 50,
             }
-            resp = requests.get(BASE_URL, params=params, timeout=30)
+            try:
+                resp = SESSAO.get(BASE_URL, params=params, timeout=60)
+            except requests.exceptions.RequestException as e:
+                print(f"  aviso: falha ao consultar município {codigo_ibge}, modalidade {modalidade}, página {pagina}: {e}")
+                break
             if resp.status_code != 200:
                 break
             dados = resp.json()
