@@ -2,8 +2,8 @@ name: Busca diária de licitações
 
 on:
   schedule:
-    # 09:00 no horário de Brasília (12:00 UTC) — pode ajustar o horário
-    - cron: "0 12 * * *"
+    # 09:00 no horário de Mato Grosso do Sul (UTC-4) = 13:00 UTC
+    - cron: "0 13 * * *"
   workflow_dispatch:
     # permite clicar em "Run workflow" manualmente na aba Actions do GitHub
 
