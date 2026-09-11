@@ -254,9 +254,20 @@ def montar_html(resultados_por_municipio: dict, data_inicial: str, data_final: s
     """
 
 
+def montar_assunto(total: int, data_final_br: str) -> str:
+    if total == 0:
+        texto = "Nenhuma oportunidade encontrada"
+    elif total == 1:
+        texto = "1 oportunidade encontrada"
+    else:
+        texto = f"{total} oportunidades encontradas"
+    return f"[Licitações] {texto} — {data_final_br}"
+
+
 def enviar_email(html: str, total: int, data_final: str):
+    data_final_br = formatar_data_br(data_final)
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Licitações] {total} oportunidade(s) encontrada(s) — {data_final}"
+    msg["Subject"] = montar_assunto(total, data_final_br)
     msg["From"] = REMETENTE
     msg["To"] = DESTINATARIOS
 
