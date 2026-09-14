@@ -13,6 +13,7 @@ import os
 import re
 import smtplib
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -278,6 +279,18 @@ def enviar_email(html: str, total: int, data_final: str):
         servidor.sendmail(REMETENTE, DESTINATARIOS.split(","), msg.as_string())
 
 
+def processar_municipio(nome_municipio: str, codigo_ibge: str, data_inicial: str, data_final: str):
+    """Busca e filtra as licitações de um único município. Roda em paralelo, uma thread por município."""
+    registros = buscar_licitacoes_municipio(codigo_ibge, data_inicial, data_final)
+    encontrados = []
+    for item in registros:
+        palavras = bate_palavra_chave(item.get("objetoCompra", ""))
+        if palavras:
+            encontrados.append((item, palavras))
+    print(f"{nome_municipio}: {len(registros)} publicações analisadas, {len(encontrados)} relevantes")
+    return nome_municipio, encontrados
+
+
 def main():
     hoje = datetime.now()
     data_inicial = (hoje - timedelta(days=DIAS_RETROATIVOS)).strftime("%Y%m%d")
@@ -286,16 +299,25 @@ def main():
     resultados_por_municipio = {}
     total = 0
 
-    for nome_municipio, codigo_ibge in MUNICIPIOS.items():
-        registros = buscar_licitacoes_municipio(codigo_ibge, data_inicial, data_final)
-        encontrados = []
-        for item in registros:
-            palavras = bate_palavra_chave(item.get("objetoCompra", ""))
-            if palavras:
-                encontrados.append((item, palavras))
-        resultados_por_municipio[nome_municipio] = encontrados
-        total += len(encontrados)
-        print(f"{nome_municipio}: {len(registros)} publicações analisadas, {len(encontrados)} relevantes")
+    # Consulta todos os municípios em paralelo (até 8 ao mesmo tempo), em vez de
+    # um por um — isso reduz bastante o tempo total quando o PNCP está lento.
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futuros = {
+            executor.submit(processar_municipio, nome, codigo, data_inicial, data_final): nome
+            for nome, codigo in MUNICIPIOS.items()
+        }
+        for futuro in as_completed(futuros):
+            nome_municipio = futuros[futuro]
+            try:
+                nome, encontrados = futuro.result()
+                resultados_por_municipio[nome] = encontrados
+                total += len(encontrados)
+            except Exception as e:
+                print(f"  aviso: falha ao processar {nome_municipio}: {e}")
+                resultados_por_municipio[nome_municipio] = []
+
+    # Reordena o dicionário na ordem original de MUNICIPIOS (o paralelismo embaralha a ordem de chegada)
+    resultados_por_municipio = {nome: resultados_por_municipio.get(nome, []) for nome in MUNICIPIOS}
 
     html = montar_html(resultados_por_municipio, data_inicial, data_final)
     enviar_email(html, total, data_final)
