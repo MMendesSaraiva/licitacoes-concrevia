@@ -10,7 +10,7 @@ on:
 jobs:
   buscar-e-enviar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Baixar o código do repositório
         uses: actions/checkout@v4
