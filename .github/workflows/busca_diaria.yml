@@ -6,6 +6,16 @@ on:
     - cron: "0 13 * * *"
   workflow_dispatch:
     # permite clicar em "Run workflow" manualmente na aba Actions do GitHub
+    inputs:
+      dias_retroativos:
+        description: "Quantos dias para trás buscar (deixe em branco para usar o padrão de 2 dias)"
+        required: false
+        type: string
+      somente_orgaos:
+        description: "Buscar só órgãos por CNPJ (ex: AGESUL), pulando os municípios"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   buscar-e-enviar:
@@ -28,4 +38,6 @@ jobs:
           EMAIL_REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
           EMAIL_SENHA_APP: ${{ secrets.EMAIL_SENHA_APP }}
           EMAIL_DESTINATARIOS: ${{ secrets.EMAIL_DESTINATARIOS }}
+          DIAS_RETROATIVOS_OVERRIDE: ${{ inputs.dias_retroativos }}
+          SOMENTE_ORGAOS: ${{ inputs.somente_orgaos }}
         run: python buscar_licitacoes.py
